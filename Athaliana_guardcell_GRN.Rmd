@@ -1,0 +1,409 @@
+---
+title: "Athaliana_guardcell_GRN"
+output: html_document
+date: "2025-06-28"
+author: Christopher T Fazekas, Huang Lab @ NYU Biology 
+data: Libault lab @ Mizzou, 
+---
+
+#Load Athaliana Dataset and prepare MINI-EX inputs
+
+```{r}
+library(Seurat)
+library(pheatmap)
+library(dplyr)
+library(clusterProfiler)
+library(org.At.tair.db)
+library(dendextend)
+
+#Change working directory 
+setwd("/scratch/ctf277/guardGRN/Nguyen_et_al_2025")
+```
+
+```{r}
+#load Athaliana dataset 
+atha <- LoadSeuratRds("Athaliana_joinlayer_newannotation1.rds")
+```
+
+```{r}
+#write out expression matrix
+atha.expression.matrix <- as.data.frame(as.matrix(GetAssayData(object = atha, assay = "RNA", layer = "counts")))
+write.table(atha.expression.matrix, "ATHA_INPUTS/ATHA_matrix.tsv", sep='\t', quote = FALSE)
+```
+
+```{r}
+#calculate all cluster markers and write out 
+Idents(atha) <- atha$seurat_clusters
+ath_markers_all <- FindAllMarkers(atha, only.pos=TRUE)
+write.table(ath_markers_all, "ATHA_INPUTS/ATHA_allMarkers.tsv", sep = "\t", quote=FALSE)
+```
+
+```{r}
+#Cluster maps for seurat_cluster ids and annotated celltypes 
+DimPlot(atha, reduction = "umap", group.by = "clusternameST")
+DimPlot(atha, reduction = "umap", group.by = "seurat_clusters", label = TRUE)
+```
+##Based upon cell types and cluster identities above, annotate the ATHA_identities file (ATHA/ATHA_identities.tsv)
+##of the format:
+13	mesophyll 3
+1	mesophyll 1
+0	spongy mesophyll
+10	phloem 2
+2	mesophyll 2
+4	epidermis/pavement 2
+8	xylem
+(...)
+
+```{r}
+#write out cluster annotation for each cell
+cells2clusters <- FetchData(atha, vars = 'ident')
+write.table(cells2clusters,"ATHA_cells2clusters.tsv", sep='\t',quote=FALSE,col.names = FALSE) 
+```
+
+##Run MINI-EX - config.log is "ATHA_NOMOTIF_OUTPUTS/ATHA_log.txt" - Arabidopsis TFs provided by MINI-EX package, primarily from TFDB (https://planttfdb.gao-lab.org/)
+##NO MOTIF filtering - some genes of interest (such as FAMA) lack motif information and are filtered out otherwise 
+
+##Network visualization with cytoscape - network.tsv file formed via make_networkfile.sh script 
+
+```{r}
+atha.regs <- read_tsv("ATHA_NOMOTIF_OUTPUTS/regulons/ATHA_rankedRegulons.tsv")
+atha.regs.members <- read_tsv("ATHA_NOMOTIF_OUTPUTS/regulons/ATHA_regulons.tsv", col_names = FALSE)
+#add colnames to members and merge with regulon info for a full regulon dataframe with all associated data and members, row-wise 
+dim(atha.regs.members)
+dim(atha.regs)
+colnames(atha.regs.members) <- c("TF","cluster_id","members")
+atha.regs <- atha.regs %>%
+  mutate(cluster_id = paste0("Cluster_", sapply(strsplit(cluster, "_"), `[`, 3)))
+atha.regs <- left_join(atha.regs,atha.regs.members, by = c("TF","cluster_id"))
+dim(atha.regs)
+atha.regs
+```
+
+```{r}
+#filter for guard cell regulons and order by borda_clusterRank 
+atha.regs.gc <- atha.regs %>% dplyr::filter(celltype == "guard cell") 
+atha.regs.gc <- atha.regs.gc %>% arrange(., borda_clusterRank)
+atha.regs.gc
+
+#select members of guard cell regulons
+regmem.atha <- atha.regs.gc %>% dplyr::select(TF,members)
+regmem.atha
+```
+
+```{r}
+#unlist members from regulons and form a list based on regulon id 
+atha_gene_sets <- list()
+
+unlist_mems <- function(regmem,gene_sets){
+  for(i in 1:nrow(regmem)) {
+  TF_name <- regmem$TF[i]
+  genes <- unlist(strsplit(regmem$members[i], ","))
+  gene_sets[[TF_name]] <- genes
+  }
+  return(gene_sets)
+}
+
+atha_gene_sets <- unlist_mems(regmem.atha,atha_gene_sets)
+```
+
+```{r}
+#check TF expression by cell type to access specificity of identified modules 
+pheat_TF_avg_celltype <- function(seurat_obj, gene_sets, name){
+  validation_genes <- setdiff(rownames(seurat_obj), unlist(gene_sets))
+  tf_expression <- FetchData(seurat_obj, vars = names(gene_sets), slot = "data", assay = 'RNA') 
+  colnames(tf_expression) <- gsub("^rna_", "", colnames(tf_expression)) #remove assay data from colnames
+  tf_avg <- aggregate(tf_expression, by = list(seurat_obj$cell_type), mean) #average by cell_type
+  
+  # Create the matrix and set column names to cell types
+  heatmap_matrix <- t(as.matrix(tf_avg[,-1]))
+  colnames(heatmap_matrix) <- tf_avg$Group.1  # Set cell type names as column names
+  
+  p <- pheatmap(
+    heatmap_matrix,
+    scale = "row",
+    main = paste0(name, " Module TF Expression by cell type cluster"),
+  )
+  return(p)
+}
+pheat_TF_avg_celltype(atha, atha_gene_sets, "Arabidopsis")
+```
+
+```{r}
+#Go enrichment for module genes 
+runGO <- function(gene_sets, seurat_obj, database, keytype){
+  
+  #background of genes in seurat_obj 
+  background_universe <- rownames(seurat_obj)
+
+  go_results <- list()
+  for(i in 1:length(gene_sets)) {
+    genes_present <- gene_sets[[i]][gene_sets[[i]] %in% rownames(seurat_obj)]
+    
+    go_results[[names(gene_sets)[i]]] <- enrichGO(
+      gene = genes_present,
+      universe = background_universe,
+      OrgDb = database,
+      keyType = keytype,
+      ont = "BP",
+      pAdjustMethod = "BH",
+      pvalueCutoff = 0.1,
+      qvalueCutoff = 0.2,
+      minGSSize = 5,
+      maxGSSize = 500
+    )
+  }
+  return(go_results)
+}
+
+#run atha for modules with expression background from atha 
+atha_go <- runGO(atha_gene_sets, atha, org.At.tair.db, "TAIR")
+```
+
+```{r}
+#after running enrichGO, filter noisy terms 
+filter_go_results <- function(go_result) {
+  if(is.null(go_result) || nrow(go_result@result) == 0) return(go_result)
+  
+  #remove terms (> 200 genes) or basic metabolic processes. terminal leaf development, removed "post-embryonic" and "capsule" - bacteria-related as well
+  broad_terms <- c("metabolic process", "biosynthetic process", 
+                   "glycogen", "carbohydrate metabolic", "catabolic process","post-embryonic", "capsule")
+  
+  filtered <- go_result@result[
+    go_result@result$Count < 200 &  # Not too many genes
+    !grepl(paste(broad_terms, collapse="|"), 
+           go_result@result$Description, ignore.case=TRUE),
+  ]
+  
+  go_result@result <- filtered
+  return(go_result)
+}
+
+#apply filtering
+atha_go_filtered <- lapply(atha_go, filter_go_results)
+```
+
+
+```{r}
+#extract GO terms
+go_term_lists <- list()
+
+for(i in 1:length(atha_go_filtered)) {
+  #check if the result exists and has terms 
+  if(!is.null(atha_go_filtered[[i]]) && nrow(atha_go_filtered[[i]]@result) > 0) {
+    #extract top 50 terms 
+    go_term_lists[[names(atha_gene_sets)[i]]] <- atha_go_filtered[[i]]@result$Description[1:min(50, nrow(atha_go_filtered[[i]]@result))]
+  }
+}
+
+#calculate Jaccard similarity
+jaccard_matrix <- matrix(0, nrow = length(go_term_lists), ncol = length(go_term_lists))
+rownames(jaccard_matrix) <- names(go_term_lists)
+colnames(jaccard_matrix) <- names(go_term_lists)
+for(i in 1:length(go_term_lists)) {
+  for(j in 1:length(go_term_lists)) {
+    if(length(go_term_lists[[i]]) > 0 && length(go_term_lists[[j]]) > 0) {
+      intersection <- length(intersect(go_term_lists[[i]], go_term_lists[[j]]))
+      union <- length(union(go_term_lists[[i]], go_term_lists[[j]]))
+      jaccard_matrix[i,j] <- intersection / union
+    }
+  }
+}
+
+#convert Jaccard to distance
+jaccard_dist <- as.dist(1 - jaccard_matrix)
+
+#cluster 
+hc <- hclust(jaccard_dist, method = "complete")
+
+#create dendrogram with colors
+dend <- as.dendrogram(hc)
+dend <- color_branches(dend, k = 7)  # Color by 3 groups
+
+plot(dend, main = "TF Module Clustering by Functional Similarity")
+```
+
+```{r}
+# cluster modules into groups based on level in dendrogram 
+k <- 7 
+module_groups <- cutree(hc, k = k)
+
+#find common and unique GO terms for each group 
+for(group in 1:k) {
+  modules_in_group <- names(module_groups)[module_groups == group]
+  cat("\n=== Functional Group", group, "===\n")
+  cat("Modules:", paste(modules_in_group, collapse = ", "), "\n")
+  
+  if(length(modules_in_group) > 1) {
+    #find shared GO terms within group
+    shared_terms <- Reduce(intersect, go_term_lists[modules_in_group])
+    cat("Shared functions (", length(shared_terms), " terms):\n")
+    if(length(shared_terms) > 0) {
+      cat(paste("-", shared_terms, "\n"))
+    }
+  }
+  
+  #unique terms for each module in group
+  for(mod in modules_in_group) {
+    other_modules <- setdiff(names(go_term_lists), mod)
+    other_terms <- unique(unlist(go_term_lists[other_modules]))
+    unique_terms <- setdiff(go_term_lists[[mod]], other_terms)
+    cat("\nUnique to", mod, "(", length(unique_terms), " terms):\n")
+    if(length(unique_terms) > 0) {
+      cat(paste("-", head(unique_terms, 10), "\n"))
+    }
+  }
+}
+```
+
+```{r}
+analyze_module_groups <- function(hc, go_term_lists, k = 7) {
+  #cluster modules into groups
+  module_groups <- cutree(hc, k = k)
+  
+  #initialize result dataframe
+  result_df <- data.frame(
+    module = character(),
+    group_id = integer(),
+    shared_functions = character(),
+    unique_functions = character(),
+    stringsAsFactors = FALSE
+  )
+  
+  #process each group
+  for(group in 1:k) {
+    modules_in_group <- names(module_groups)[module_groups == group]
+    
+    #find shared GO terms within group if >1 module
+    shared_terms <- character()
+    if(length(modules_in_group) > 1) {
+      shared_terms <- Reduce(intersect, go_term_lists[modules_in_group])
+    }
+    
+    #convert shared terms to single string
+    shared_functions_str <- if(length(shared_terms) > 0) {
+      paste(shared_terms, collapse = "; ")
+    } else {
+      ""
+    }
+    
+    #process each module in the group
+    for(mod in modules_in_group) {
+      #find unique terms for this module
+      other_modules <- setdiff(names(go_term_lists), mod)
+      other_terms <- unique(unlist(go_term_lists[other_modules]))
+      unique_terms <- setdiff(go_term_lists[[mod]], other_terms)
+      
+      #convert unique terms to single string
+      unique_functions_str <- if(length(unique_terms) > 0) {
+        paste(unique_terms, collapse = "; ")
+      } else {
+        ""
+      }
+      
+      # Add row to result dataframe
+      result_df <- rbind(result_df, data.frame(
+        module = mod,
+        group_id = group,
+        shared_functions = shared_functions_str,
+        unique_functions = unique_functions_str,
+        stringsAsFactors = FALSE
+      ))
+    }
+  }
+  
+  return(result_df)
+}
+
+#create module analysis df
+module_analysis_df <- analyze_module_groups(hc, go_term_lists, k = 7)
+#write out 
+write.table(module_analysis_df, file = "GO_modules.tsv", row.names = FALSE, quote = FALSE, sep ='\t')
+```
+
+```{r}
+#check which modules have GO data
+cat("Modules with GO data:", length(atha_go_filtered), "\n")
+cat("Gene sets:", length(atha_gene_sets), "\n")
+
+#check for mismatches
+go_modules <- names(atha_go_filtered)
+gene_set_modules <- names(atha_gene_sets)
+cat("Missing in GO:", setdiff(gene_set_modules, go_modules), "\n")
+cat("Missing in gene sets:", setdiff(go_modules, gene_set_modules), "\n")
+
+#check what gets filtered out
+modules_with_data <- c()
+for(i in 1:length(atha_go_filtered)) {
+  if(!is.null(atha_go_filtered[[i]]) && nrow(atha_go_filtered[[i]]) > 0) {
+    modules_with_data <- c(modules_with_data, names(atha_gene_sets)[i])
+  }
+}
+cat("Modules with GO terms:", length(modules_with_data), "\n")
+cat("Missing modules:", setdiff(names(atha_gene_sets), modules_with_data), "\n")
+
+#check merge results before and after merge
+cat("Modules before merge:", length(unique(top_terms_per_module$Module)), "\n")
+cat("Modules after merge:", length(unique(top_terms_per_module$Module)), "\n")
+```
+
+```{r}
+#extract top GO terms for each module
+top_terms_per_module <- data.frame()
+for(i in 1:length(atha_go_filtered)) {
+  if(!is.null(atha_go_filtered[[i]]) && nrow(atha_go_filtered[[i]]) > 0) {
+    df <- as.data.frame(atha_go_filtered[[i]])
+    df <- df[1:min(4, nrow(df)), ]  
+    df$Module <- names(atha_gene_sets)[i]
+    top_terms_per_module <- rbind(top_terms_per_module, df)
+  }
+}
+
+#color mapping for module groups
+group_colors <- c(
+  "1" = "#377EB8",
+  "2" = "#4EB3D3",  
+  "3" = "#74C476",
+  "4" = "#C994C7",  
+  "5" = "#6A51A3",
+  "6" = "#8C96C6",  
+  "7" = "#FC8D59"   
+)
+
+#module group mapping
+module_names <- names(atha_gene_sets)
+module_group_df <- data.frame(
+  Module = module_names,
+  Group = module_groups[module_names]
+)
+
+#merge with the plotting data
+top_terms_per_module <- merge(top_terms_per_module, module_group_df, by = "Module")
+
+#order modules by their group number
+module_order <- module_group_df[order(module_group_df$Group), "Module"]
+top_terms_per_module$Module <- factor(top_terms_per_module$Module, levels = module_order)
+
+#create colors for x-axis text based on module groups
+axis_colors <- setNames(
+  group_colors[as.character(module_group_df$Group[match(module_order, module_group_df$Module)])],
+  module_order
+)
+
+#create the plot
+dot_atha <- ggplot(top_terms_per_module, aes(x = Module, y = Description, 
+                                  size = Count, color = p.adjust)) +
+  geom_point() +
+  scale_color_gradient(low = "red", high = "blue") +
+  scale_size_area(max_size = 4) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.7, size = 7, hjust = 2,
+                                   color = axis_colors[levels(top_terms_per_module$Module)]),
+        axis.text.y = element_text(angle = -30, hjust = 1, vjust = 1, size = 7)) + 
+  labs(title = " ",
+       x = " ", 
+       y = " ",
+       size = "Gene Count", 
+       color = "Adjusted P-value")
+
+ggsave("GO_atha_guard.png", dot_atha, scale = 1, width = 8, height = 10)
+```

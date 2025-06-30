@@ -1,0 +1,68 @@
+MINI-EX v3.1 
+Pipeline started on: Thu Jun 26 08:00:04 EDT 2025
+
+== INPUT VALIDATION ==========================================
+Input files passed validation tests. Retrieved following data:
+         cells  genes  clusters  tissues
+dataset                                 
+ATHA     16685  21165        16       16
+
+== INPUT FILES ===============================================
+Expression matrix file(s)  : ATHA_matrix.tsv
+Seurat markers file(s)     : ATHA_allMarkers.tsv
+Cells to clusters file(s)  : ATHA_cells2clusters.tsv
+Cluster identities file(s) : ATHA_identities.tsv
+GRNBoost output file(s)    : ATHA_grnboost2.tsv
+Transcription factor file  : ath_TF_list.tsv
+TF info file               : .dummy_path_info_tf
+Gene aliases file          : .dummy_path_gene_aliases
+Motifs feature file        : NOT PROVIDED
+GO file                    : NOT PROVIDED
+Terms of interest file     : NOT PROVIDED
+Enrichment background file : NOT PROVIDED
+
+== MINI-EX PARAMETERS ========================================
+doMotifAnalysis            : false
+topMarkers                 : 700
+expressionFilter           : 10
+motifFilter                : TF-F_motifs
+topRegulons                : 150
+
+== INITIAL TF SET ============================================
+               Number of TFs
+All TFs                 1877
+Expressed TFs           1463
+
+== GRN FILTERING =============================================
+                               Unique regulators  Regulons  Median regulon size
+Step 1 (GRNBoost2)                          1463      1463               5810.0
+Step 2 (motif filtering)                    1463      1463               5810.0
+Step 3 (expression filtering)                507      1784                514.0
+
+Per cluster statistics of the final GRN:
+
+              Number of regulons  Regulon size (median number of TGs)
+Cluster_0                  173.0                                602.0
+Cluster_1                   30.0                                693.5
+Cluster_2                  202.0                                577.0
+Cluster_3                  104.0                                561.5
+Cluster_4                   74.0                                580.0
+Cluster_5                   65.0                                533.0
+Cluster_6                   33.0                                512.0
+Cluster_7                   63.0                                451.0
+Cluster_8                   17.0                                448.0
+Cluster_9                   43.0                                502.0
+Cluster_10                  27.0                                483.0
+Cluster_11                 360.0                                471.5
+Cluster_12                 217.0                                476.0
+Cluster_13                 332.0                                467.0
+Cluster_14                   5.0                                411.0
+Cluster_15                  39.0                                415.0
+MEDIAN VALUE                64.0                                492.5
+
+== BORDA RANKING =============================================
+Borda procedure: STANDARD
+Default metrics: qval_cluster, out-degree, betweenness, closeness, TF_qval, med_coexpr
+
+==============================================================
+Pipeline ended on: Thu Jun 26 08:11:45 EDT 2025

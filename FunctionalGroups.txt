@@ -1,0 +1,169 @@
+=== Functional Group 1 ===
+Modules: AT3G24140, AT3G57600, AT4G04450, AT2G47260, AT5G65590, AT5G08130, AT5G02460, AT1G23380, AT5G45580, AT2G19810, AT1G68130, AT2G43500, AT3G54390, AT3G06740, AT2G42280, AT1G32240, AT2G32250 
+Shared functions ( 7  terms):
+- stomatal movement 
+ - regulation of stomatal movement 
+ - protein localization involved in auxin polar transport 
+ - cellular response to carbon dioxide 
+ - cytoskeleton organization 
+
+Unique to AT3G24140 ( 0  terms):
+
+Unique to AT3G57600 ( 0  terms):
+
+Unique to AT4G04450 ( 0  terms):
+
+Unique to AT2G47260 ( 0  terms):
+
+Unique to AT5G65590 ( 1  terms):
+- cell-cell signaling involved in cell fate commitment 
+
+Unique to AT5G08130 ( 0  terms):
+
+Unique to AT5G02460 ( 1  terms):
+- actin filament organization 
+
+Unique to AT1G23380 ( 0  terms):
+
+Unique to AT5G45580 ( 0  terms):
+
+Unique to AT2G19810 ( 2  terms):
+- negative regulation of stomatal complex development 
+ - syncytium formation 
+
+Unique to AT1G68130 ( 0  terms):
+
+Unique to AT2G43500 ( 0  terms):
+
+Unique to AT3G54390 ( 0  terms):
+
+Unique to AT3G06740 ( 0  terms):
+
+Unique to AT2G42280 ( 0  terms):
+
+Unique to AT1G32240 ( 0  terms):
+
+Unique to AT2G32250 ( 2  terms):
+- response to monosaccharide 
+ - cellular response to heat 
+
+=== Functional Group 2 ===
+Modules: AT2G23340, AT1G59640, AT3G58630, AT1G25250 
+Shared functions ( 13  terms):
+- stomatal movement 
+ - protein localization involved in auxin polar transport 
+ - cellular response to carbon dioxide 
+ - peptidyl-threonine dephosphorylation 
+ - regulation of stomatal movement 
+
+Unique to AT2G23340 ( 0  terms):
+
+Unique to AT1G59640 ( 5  terms):
+- radial pattern formation 
+ - establishment or maintenance of cell polarity 
+ - regulation of actin filament organization 
+
+Unique to AT3G58630 ( 1  terms):
+- regulation of hydrolase activity 
+
+Unique to AT1G25250 ( 0  terms):
+
+=== Functional Group 3 ===
+Modules: AT1G77920, AT1G10610, AT1G27660, AT3G01470, AT5G18550, AT1G49560 
+Shared functions ( 9  terms):
+- protein localization involved in auxin polar transport 
+ - stomatal movement 
+ - microtubule-based process 
+ - cytoskeleton organization 
+ - microtubule cytoskeleton organization 
+
+Unique to AT1G77920 ( 1  terms):
+- response to cadmium ion 
+
+Unique to AT1G10610 ( 0  terms):
+
+Unique to AT1G27660 ( 1  terms):
+- monosaccharide transmembrane transport 
+
+Unique to AT3G01470 ( 1  terms):
+- cellular response to chemical stress 
+
+Unique to AT5G18550 ( 0  terms):
+
+Unique to AT1G49560 ( 2  terms):
+- calcium ion transmembrane transport 
+ - metal ion transport 
+
+=== Functional Group 4 ===
+Modules: AT1G52890, AT5G25830, AT4G38900 
+Shared functions ( 16  terms):
+- stomatal movement 
+ - protein localization involved in auxin polar transport 
+ - peptidyl-threonine dephosphorylation 
+ - response to desiccation 
+ - drought recovery 
+
+Unique to AT1G52890 ( 0  terms):
+
+Unique to AT5G25830 ( 3  terms):
+- defense response to symbiont 
+ - defense response to virus 
+ - response to virus 
+
+Unique to AT4G38900 ( 1  terms):
+- positive regulation of developmental process 
+
+=== Functional Group 5 ===
+Modules: AT4G18020, AT3G48440 
+Shared functions ( 30  terms):
+- stomatal movement 
+ - protein localization involved in auxin polar transport 
+ - sodium ion transmembrane transport 
+ - sodium ion import across plasma membrane 
+ - regulation of stomatal movement 
+
+Unique to AT4G18020 ( 0  terms):
+
+Unique to AT3G48440 ( 1  terms):
+- response to carbohydrate 
+
+=== Functional Group 6 ===
+Modules: AT1G05710, AT5G57390, AT4G24060, AT1G01920 
+Shared functions ( 17  terms):
+- sodium ion transmembrane transport 
+ - sodium ion import across plasma membrane 
+ - response to desiccation 
+ - stomatal movement 
+ - sodium ion transport 
+
+Unique to AT1G05710 ( 0  terms):
+
+Unique to AT5G57390 ( 0  terms):
+
+Unique to AT4G24060 ( 2  terms):
+- chemical homeostasis 
+ - intracellular monoatomic cation homeostasis 
+
+Unique to AT1G01920 ( 0  terms):
+
+=== Functional Group 7 ===
+Modules: AT1G62300, AT1G29560, AT2G23290 
+Shared functions ( 18  terms):
+- stomatal movement 
+ - peptidyl-threonine dephosphorylation 
+ - regulation of stomatal movement 
+ - response to carbon dioxide 
+ - cellular response to carbon dioxide 
+
+Unique to AT1G62300 ( 1  terms):
+- secretion by cell 
+
+Unique to AT1G29560 ( 4  terms):
+- protein targeting to vacuole 
+ - positive regulation of growth 
+ - response to salt 
+
+Unique to AT2G23290 ( 4  terms):
+- regulation of immune system process 
+ - regulation of immune response 
+ - response to starvation 
